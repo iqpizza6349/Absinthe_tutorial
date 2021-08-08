@@ -5,6 +5,8 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="bot.bot.CompetitiveBot.structures" />
+          <option value="bot.bot.CompetitiveBot.vespene_geyser" />
+          <option value="bot.bot.CompetitiveBot.gas_buildings" />
         </list>
       </option>
     </inspection_tool>

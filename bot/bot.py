@@ -36,6 +36,7 @@ class CompetitiveBot(BotAI):
         await self.build_workers()
         await self.build_pylons()
         await self.build_gateway()
+        await self.build_gas()
 
         pass
 
@@ -67,6 +68,20 @@ class CompetitiveBot(BotAI):
         ):
             pylon = self.structures(UnitTypeId.PYLON).ready.random
             await self.build(UnitTypeId.GATEWAY, near=pylon)
+
+    async def build_gas(self):
+        if self.structures(UnitTypeId.GATEWAY):
+            for nexus in self.townhalls.ready:
+                vespenes = self.vespene_geyser.closer_than(15, nexus)
+                for gas in vespenes:
+                    if not self.can_afford(UnitTypeId.ASSIMILATOR):
+                        break
+                    worker = self.select_build_worker(gas.position)
+                    if worker is None:
+                        break
+                    if not self.gas_buildings or not self.gas_buildings.closer_than(1, gas):
+                        worker.build(UnitTypeId.ASSIMILATOR, gas)
+                        worker.stop(queue=True)
 
     def on_end(self, result):
         print("Game ended.")

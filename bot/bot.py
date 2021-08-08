@@ -38,6 +38,8 @@ class CompetitiveBot(BotAI):
         await self.build_gateway()
         await self.build_gas()
         await self.build_core()
+        await self.build_four_gates()
+        await self.train_stalkers()
 
         pass
 
@@ -94,6 +96,23 @@ class CompetitiveBot(BotAI):
                             and self.already_pending(UnitTypeId.CYBERNETICSCORE) == 0
                     ):
                         await self.build(UnitTypeId.CYBERNETICSCORE, near=pylons)
+
+    async def train_stalkers(self):
+        for gate in self.structures(UnitTypeId.GATEWAY).ready:
+            if (
+                self.can_afford(UnitTypeId.STALKER)
+                and gate.is_idle
+            ):
+                gate.train(UnitTypeId.STALKER)
+
+    async def build_four_gates(self):
+        if (
+            self.structures(UnitTypeId.PYLON).ready
+            and self.can_afford(UnitTypeId.GATEWAY)
+            and self.structures(UnitTypeId.GATEWAY).amount < 4
+        ):
+            pylon = self.structures(UnitTypeId.PYLON).ready.random
+            await self.build(UnitTypeId.GATEWAY, near=pylon)
 
     def on_end(self, result):
         print("Game ended.")

@@ -35,6 +35,7 @@ class CompetitiveBot(BotAI):
         await self.distribute_workers()
         await self.build_workers()
         await self.build_pylons()
+        await self.build_gateway()
 
         pass
 
@@ -57,6 +58,15 @@ class CompetitiveBot(BotAI):
                 and self.can_afford(UnitTypeId.PYLON)
         ):
             await self.build(UnitTypeId.PYLON, near=pos)
+
+    async def build_gateway(self):
+        if (
+                self.structures(UnitTypeId.PYLON).ready
+                and self.can_afford(UnitTypeId.GATEWAY)
+                and not self.structures(UnitTypeId.GATEWAY)
+        ):
+            pylon = self.structures(UnitTypeId.PYLON).ready.random
+            await self.build(UnitTypeId.GATEWAY, near=pylon)
 
     def on_end(self, result):
         print("Game ended.")

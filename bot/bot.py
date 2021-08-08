@@ -34,6 +34,7 @@ class CompetitiveBot(BotAI):
         # Populate this function with whatever your bot should do!
         await self.distribute_workers()
         await self.build_workers()
+        await self.build_pylons()
 
         pass
 
@@ -45,6 +46,17 @@ class CompetitiveBot(BotAI):
                 and self.workers.amount < self.townhalls.amount * 22
         ):
             nexus.train(UnitTypeId.PROBE)
+
+    async def build_pylons(self):
+        nexus = self.townhalls.ready.random # 완성된 넥서스 중 하나를 가져옴
+        pos = nexus.position.towards(self.enemy_start_locations[0], 10)
+
+        if (
+                self.supply_left < 3
+                and self.already_pending(UnitTypeId.PYLON) == 0
+                and self.can_afford(UnitTypeId.PYLON)
+        ):
+            await self.build(UnitTypeId.PYLON, near=pos)
 
     def on_end(self, result):
         print("Game ended.")

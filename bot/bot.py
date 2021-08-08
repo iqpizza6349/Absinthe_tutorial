@@ -37,6 +37,7 @@ class CompetitiveBot(BotAI):
         await self.build_pylons()
         await self.build_gateway()
         await self.build_gas()
+        await self.build_core()
 
         pass
 
@@ -82,6 +83,17 @@ class CompetitiveBot(BotAI):
                     if not self.gas_buildings or not self.gas_buildings.closer_than(1, gas):
                         worker.build(UnitTypeId.ASSIMILATOR, gas)
                         worker.stop(queue=True)
+
+    async def build_core(self):
+        if self.structures(UnitTypeId.PYLON).ready:
+            pylons = self.structures(UnitTypeId.PYLON).ready.random
+            if self.structures(UnitTypeId.GATEWAY).ready:
+                if not self.structures(UnitTypeId.CYBERNETICSCORE):
+                    if (
+                            self.can_afford(UnitTypeId.CYBERNETICSCORE)
+                            and self.already_pending(UnitTypeId.CYBERNETICSCORE) == 0
+                    ):
+                        await self.build(UnitTypeId.CYBERNETICSCORE, near=pylons)
 
     def on_end(self, result):
         print("Game ended.")

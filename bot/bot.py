@@ -40,6 +40,7 @@ class CompetitiveBot(BotAI):
         await self.build_core()
         await self.build_four_gates()
         await self.train_stalkers()
+        await self.chrono()
 
         pass
 
@@ -113,6 +114,15 @@ class CompetitiveBot(BotAI):
         ):
             pylon = self.structures(UnitTypeId.PYLON).ready.random
             await self.build(UnitTypeId.GATEWAY, near=pylon)
+
+    async def chrono(self):
+        if self.structures(UnitTypeId.PYLON):
+            nexus = self.townhalls.ready.random
+            if (
+                self.structures(UnitTypeId.PYLON).amount > 0
+            ):
+                if nexus.energy >= 50:
+                    nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
 
     def on_end(self, result):
         print("Game ended.")

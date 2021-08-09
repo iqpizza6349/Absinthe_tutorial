@@ -40,6 +40,8 @@ class CompetitiveBot(BotAI):
         await self.build_core()
         await self.build_four_gates()
         await self.train_stalkers()
+        await self.chrono()
+        await self.warpgate_research()
 
         pass
 
@@ -113,6 +115,25 @@ class CompetitiveBot(BotAI):
         ):
             pylon = self.structures(UnitTypeId.PYLON).ready.random
             await self.build(UnitTypeId.GATEWAY, near=pylon)
+
+    async def chrono(self):
+        if self.structures(UnitTypeId.PYLON):
+            nexus = self.townhalls.ready.random
+            if (
+                self.structures(UnitTypeId.PYLON).amount > 0
+            ):
+                if nexus.energy >= 50:
+                    nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
+
+    async def warpgate_research(self):
+        if (
+            self.structures(UnitTypeId.CYBERNETICSCORE).ready
+            and self.can_afford(AbilityId.RESEARCH_WARPGATE)
+            and self.already_pending_upgrade(UpgradeId.WARPGATERESEARCH) == 0
+        ):
+            cybercore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.first
+            cybercore.research(UpgradeId.WARPGATERESEARCH)
+
 
     def on_end(self, result):
         print("Game ended.")

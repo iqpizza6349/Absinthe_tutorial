@@ -42,6 +42,7 @@ class CompetitiveBot(BotAI):
         await self.train_stalkers()
         await self.chrono()
         await self.warpgate_research()
+        await self.attack()
 
         pass
 
@@ -133,6 +134,16 @@ class CompetitiveBot(BotAI):
         ):
             cybercore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.first
             cybercore.research(UpgradeId.WARPGATERESEARCH)
+
+    async def attack(self):
+        stalker_count = self.units(UnitTypeId.STALKER).amount
+        stalkers = self.units(UnitTypeId.STALKER).ready.idle
+
+        if stalker_count < 4:
+            return
+
+        for stalker in stalkers:
+            stalker.attack(self.enemy_start_locations[0])
 
 
     def on_end(self, result):

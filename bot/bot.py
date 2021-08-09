@@ -25,7 +25,6 @@ class CompetitiveBot(BotAI):
         # Initalize inherited class
         sc2.BotAI.__init__(self)
 
-
     async def on_start(self):
         print("Game started")
         # Do things here before the game starts
@@ -43,6 +42,7 @@ class CompetitiveBot(BotAI):
         await self.chrono()
         await self.warpgate_research()
         await self.attack()
+        await self.warp_stalkers()
 
         pass
 
@@ -145,6 +145,13 @@ class CompetitiveBot(BotAI):
         for stalker in stalkers:
             stalker.attack(self.enemy_start_locations[0])
 
+    async def warp_stalkers(self):
+        for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
+            abilities = await self.get_available_abilities(warpgate)
+            pylon = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
+            if AbilityId.WARPGATETRAIN_STALKER in abilities and self.can_afford(UnitTypeId.STALKER):
+                placement = pylon.position.random_on_distance(3)
+                warpgate.warp_in(UnitTypeId.STALKER, placement)
 
     def on_end(self, result):
         print("Game ended.")

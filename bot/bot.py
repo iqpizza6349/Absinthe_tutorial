@@ -1,3 +1,5 @@
+import random
+
 import sc2
 from sc2 import BotAI, Race
 from sc2.ids.unit_typeid import UnitTypeId
@@ -43,6 +45,7 @@ class CompetitiveBot(BotAI):
         await self.warpgate_research()
         await self.attack()
         await self.warp_stalkers()
+        await self.mirco_stalkers()
 
         pass
 
@@ -152,6 +155,21 @@ class CompetitiveBot(BotAI):
             if AbilityId.WARPGATETRAIN_STALKER in abilities and self.can_afford(UnitTypeId.STALKER):
                 placement = pylon.position.random_on_distance(3)
                 warpgate.warp_in(UnitTypeId.STALKER, placement)
+
+    async def mirco_stalkers(self):
+        stalkers = self.units(UnitTypeId.STALKER)
+        enemy_location = self.enemy_start_locations[0]
+
+        if self.structures(UnitTypeId.PYLON):
+            pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
+
+            for stalker in stalkers:
+                if stalker.weapon_cooldown == 0:
+                    stalker.attack(enemy_location)
+                elif stalker.weapon_cooldown < 0:
+                    stalker.move(pylon)
+                else:
+                    stalker.move(pylon)
 
     def on_end(self, result):
         print("Game ended.")

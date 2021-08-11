@@ -1,17 +1,11 @@
+import sc2
+from sc2 import run_game, maps, Race, Difficulty
+from sc2.player import Bot, Computer
+from sc2.constants import *
 import random
 
-import sc2
-from sc2 import BotAI, Race
-from sc2.ids.unit_typeid import UnitTypeId
-from sc2.ids.ability_id import AbilityId
-from sc2.ids.upgrade_id import UpgradeId
-from sc2.unit import Unit
-from sc2.units import Unit
-from sc2.position import Point2
-from sc2.player import Bot, Computer
 
-
-class CompetitiveBot(BotAI):
+class CompetitiveBot(sc2.BotAI):
     NAME: str = "CompetitiveBot"
     """This bot's name"""
     RACE: Race = Race.Protoss
@@ -143,11 +137,9 @@ class CompetitiveBot(BotAI):
         stalker_count = self.units(UnitTypeId.STALKER).amount
         stalkers = self.units(UnitTypeId.STALKER).ready.idle
 
-        if stalker_count < 4:
-            return
-
-        for stalker in stalkers:
-            stalker.attack(self.enemy_start_locations[0])
+        if stalker_count > 3:
+            for s in stalkers:
+                s.attack(self.find_target())
 
     async def warp_stalkers(self):
         for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
@@ -175,6 +167,11 @@ class CompetitiveBot(BotAI):
     async def expand(self):
         if self.units(UnitTypeId.NEXUS).amount < 3 and self.can_afford(UnitTypeId.NEXUS):
             await self.expand_now()
+
+    def find_target(self):
+        if self.enemy_structures:
+            return random.choice(self.enemy_structures).position
+        return self.enemy_start_locations[0]
 
     def on_end(self, result):
         print("Game ended.")

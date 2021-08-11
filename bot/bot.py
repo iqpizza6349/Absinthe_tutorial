@@ -46,6 +46,7 @@ class CompetitiveBot(BotAI):
         await self.attack()
         await self.warp_stalkers()
         await self.mirco_stalkers()
+        await self.expand()
 
         pass
 
@@ -170,6 +171,10 @@ class CompetitiveBot(BotAI):
                     stalker.move(pylon)
                 else:
                     stalker.move(pylon)
+
+    async def expand(self):
+        if self.units(UnitTypeId.NEXUS).amount < 3 and self.can_afford(UnitTypeId.NEXUS):
+            await self.expand_now()
 
     def on_end(self, result):
         print("Game ended.")

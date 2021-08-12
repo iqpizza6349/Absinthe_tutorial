@@ -7,6 +7,9 @@
           <option value="bot.bot.CompetitiveBot.structures" />
           <option value="bot.bot.CompetitiveBot.vespene_geyser" />
           <option value="bot.bot.CompetitiveBot.gas_buildings" />
+          <option value="bot.bot.CompetitiveBot.enemy_units" />
+          <option value="bot.bot.CompetitiveBot.enemy_structures" />
+          <option value="bot.bot.CompetitiveBot.mineral_field" />
         </list>
       </option>
     </inspection_tool>

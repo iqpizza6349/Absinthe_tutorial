@@ -1,17 +1,11 @@
+import sc2
+from sc2 import run_game, maps, Race, Difficulty
+from sc2.player import Bot, Computer
+from sc2.constants import *
 import random
 
-import sc2
-from sc2 import BotAI, Race
-from sc2.ids.unit_typeid import UnitTypeId
-from sc2.ids.ability_id import AbilityId
-from sc2.ids.upgrade_id import UpgradeId
-from sc2.unit import Unit
-from sc2.units import Unit
-from sc2.position import Point2
-from sc2.player import Bot, Computer
 
-
-class CompetitiveBot(BotAI):
+class CompetitiveBot(sc2.BotAI):
     NAME: str = "CompetitiveBot"
     """This bot's name"""
     RACE: Race = Race.Protoss
@@ -47,6 +41,10 @@ class CompetitiveBot(BotAI):
         await self.warp_stalkers()
         await self.mirco_stalkers()
         await self.expand()
+        await self.build_robotics()
+        await self.train_observer()
+        await self.train_immortal()
+        await self.mirco_immortal()
 
         pass
 
@@ -105,6 +103,10 @@ class CompetitiveBot(BotAI):
                         await self.build(UnitTypeId.CYBERNETICSCORE, near=pylons)
 
     async def train_stalkers(self):
+        immortal_count = self.units(UnitTypeId.IMMORTAL).ready.amount
+        if immortal_count > 3:
+            return
+
         for gate in self.structures(UnitTypeId.GATEWAY).ready:
             if (
                 self.can_afford(UnitTypeId.STALKER)
@@ -117,6 +119,7 @@ class CompetitiveBot(BotAI):
             self.structures(UnitTypeId.PYLON).ready
             and self.can_afford(UnitTypeId.GATEWAY)
             and self.structures(UnitTypeId.GATEWAY).amount < 4
+            and self.structures(UnitTypeId.WARPGATE).amount < 5
         ):
             pylon = self.structures(UnitTypeId.PYLON).ready.random
             await self.build(UnitTypeId.GATEWAY, near=pylon)
@@ -124,10 +127,17 @@ class CompetitiveBot(BotAI):
     async def chrono(self):
         if self.structures(UnitTypeId.PYLON):
             nexus = self.townhalls.ready.random
-            if (
-                self.structures(UnitTypeId.PYLON).amount > 0
-            ):
-                if nexus.energy >= 50:
+
+            if  nexus.energy >= 50:
+                if self.structures(UnitTypeId.CYBERNETICSCORE).ready.amount > 0:
+                    cybercore = self.structures(UnitTypeId.CYBERNETICSCORE).ready.random
+                    if (
+                        0 < self.already_pending_upgrade(UpgradeId.WARPGATERESEARCH) < 1
+                    ):
+                        nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, cybercore)
+                    elif self.structures(UnitTypeId.PYLON).amount > 0:
+                        nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
+                elif self.structures(UnitTypeId.PYLON).amount > 0:
                     nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, nexus)
 
     async def warpgate_research(self):
@@ -140,16 +150,25 @@ class CompetitiveBot(BotAI):
             cybercore.research(UpgradeId.WARPGATERESEARCH)
 
     async def attack(self):
-        stalker_count = self.units(UnitTypeId.STALKER).amount
+        stalker_count = self.units(UnitTypeId.STALKER).ready.amount
         stalkers = self.units(UnitTypeId.STALKER).ready.idle
 
-        if stalker_count < 4:
-            return
+        immortal_count = self.units(UnitTypeId.IMMORTAL).ready.amount
+        immortals = self.units(UnitTypeId.IMMORTAL)
 
-        for stalker in stalkers:
-            stalker.attack(self.enemy_start_locations[0])
+        if stalker_count > 3:
+            for s in stalkers:
+                s.attack(self.find_target())
+
+        if immortal_count > 0:
+            for i in immortals:
+                i.attack(self.find_target())
 
     async def warp_stalkers(self):
+        immortal_count = self.units(UnitTypeId.IMMORTAL).ready.amount
+        if immortal_count > 3:
+            return
+
         for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
             abilities = await self.get_available_abilities(warpgate)
             pylon = self.structures(UnitTypeId.PYLON).closest_to(self.enemy_start_locations[0])
@@ -158,6 +177,10 @@ class CompetitiveBot(BotAI):
                 warpgate.warp_in(UnitTypeId.STALKER, placement)
 
     async def mirco_stalkers(self):
+        stalker_count = self.units(UnitTypeId.STALKER).amount
+        if stalker_count > 20:
+            return
+
         stalkers = self.units(UnitTypeId.STALKER)
         enemy_location = self.enemy_start_locations[0]
 
@@ -172,9 +195,76 @@ class CompetitiveBot(BotAI):
                 else:
                     stalker.move(pylon)
 
+    async def mirco_immortal(self):
+        immortal_count = self.units(UnitTypeId.IMMORTAL).amount
+        if immortal_count > 4:
+            return
+
+        immortals = self.units(UnitTypeId.IMMORTAL)
+        enemy_location = self.enemy_start_locations[0]
+
+        if self.structures(UnitTypeId.PYLON):
+            pylon = self.structures(UnitTypeId.PYLON).closest_to(enemy_location)
+
+            for immortal in immortals:
+                if immortal.weapon_cooldown == 0:
+                    immortal.attack(enemy_location)
+                elif immortal.weapon_cooldown < 0:
+                    immortal.move(pylon)
+                else:
+                    immortal.move(pylon)
+
     async def expand(self):
         if self.units(UnitTypeId.NEXUS).amount < 3 and self.can_afford(UnitTypeId.NEXUS):
             await self.expand_now()
+
+    async def build_robotics(self):
+        if (
+            self.structures(UnitTypeId.PYLON).ready
+            and self.structures(UnitTypeId.CYBERNETICSCORE).ready
+            and self.can_afford(UnitTypeId.ROBOTICSFACILITY)
+            and not self.structures(UnitTypeId.ROBOTICSFACILITY)
+        ):
+            pylon = self.structures(UnitTypeId.PYLON).ready.random
+            await self.build(UnitTypeId.ROBOTICSFACILITY, near=pylon)
+
+    async def train_observer(self):
+        observer_count = self.units(UnitTypeId.OBSERVER).amount
+        if observer_count < 1:
+            for rb in self.structures(UnitTypeId.ROBOTICSFACILITY).ready:
+                if (
+                    self.can_afford(UnitTypeId.OBSERVER)
+                    and rb.is_idle
+                ):
+                    rb.train(UnitTypeId.OBSERVER)
+
+    async def train_immortal(self):
+        observer_count = self.units(UnitTypeId.OBSERVER).amount
+        if observer_count > 0:
+            for rb in self.structures(UnitTypeId.ROBOTICSFACILITY).ready:
+                if (
+                        self.can_afford(UnitTypeId.IMMORTAL)
+                        and rb.is_idle
+                ):
+                    rb.train(UnitTypeId.IMMORTAL)
+
+    def find_target(self):
+        # Pick a random enemy structure's position
+        targets = self.enemy_structures
+        if targets:
+            return targets.random.position
+
+        # Pick a random enemy unit's position
+        targets = self.enemy_units
+        if targets:
+            return targets.random.position
+
+        # Pick enemy start location if it has no friendly units nearby
+        if min([unit.distance_to(self.enemy_start_locations[0]) for unit in self.units]) > 5:
+            return self.enemy_start_locations[0]
+
+        # Pick a random mineral field on the map
+        return self.mineral_field.random.position
 
     def on_end(self, result):
         print("Game ended.")

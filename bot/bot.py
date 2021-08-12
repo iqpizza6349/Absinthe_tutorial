@@ -166,7 +166,11 @@ class CompetitiveBot(sc2.BotAI):
 
     async def warp_stalkers(self):
         immortal_count = self.units(UnitTypeId.IMMORTAL).ready.amount
-        if immortal_count > 3:
+        stalker_count = self.units(UnitTypeId.STALKER).ready.amount
+        if (
+                immortal_count <= stalker_count * 0.125
+                and self.structures(UnitTypeId.ROBOTICSFACILITY)
+        ):
             return
 
         for warpgate in self.structures(UnitTypeId.WARPGATE).ready:
@@ -239,8 +243,8 @@ class CompetitiveBot(sc2.BotAI):
                     rb.train(UnitTypeId.OBSERVER)
 
     async def train_immortal(self):
-        observer_count = self.units(UnitTypeId.OBSERVER).amount
-        if observer_count > 0:
+        immortal_count = self.units(UnitTypeId.IMMORTAL).amount
+        if immortal_count < 8:
             for rb in self.structures(UnitTypeId.ROBOTICSFACILITY).ready:
                 if (
                         self.can_afford(UnitTypeId.IMMORTAL)
